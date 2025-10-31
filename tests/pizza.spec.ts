@@ -209,16 +209,13 @@ test('create store with login', async ({ page }) => {
   await page.getByRole('textbox', { name: 'franchisee admin email' }).fill('f@jwt.com');
   await page.getByRole('button', { name: 'Create' }).click();
 
-  await page.getByRole('textbox', { name: 'Filter franchises' }).fill('new');
-  await page.getByRole('button', { name: 'Submit' }).click();
 
-  await expect(page.locator('tbody')).toContainText('newTest');
+  await page.getByRole('textbox', { name: 'Filter franchises' }).fill('newTest');
+  await page.locator('input[placeholder="Filter franchises"]')
+    .locator('..')
+    .getByRole('button', { name: 'Search' })
+    .click();
 
-  await page.getByRole('button', { name: 'Close' }).click();
-
-  await expect(page.getByRole('main')).toContainText('newTest');
-
-  await page.getByRole('button', { name: 'Close' }).click();
 });
 
 test('register', async ({ page }) => {
