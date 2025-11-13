@@ -67,6 +67,31 @@ async function mockUserUpdateApis(page: Page, initialUser: any) {
       await route.continue();
     }
   });
+
+  await page.route("http://localhost:3000/api/order", async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: {},
+    });
+  });
+
+  await page.route("http://localhost:3000/api/auth", async (route) => {
+    if (route.request().method() === "PUT") {
+      await route.fulfill({
+        status: 200,
+        json: {},
+      });
+    }
+  });
+
+  await page.route("http://localhost:3000/api/user", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({
+        status: 200,
+        json: {},
+      });
+    }
+  });
 }
 
 test("update user name", async ({ page }) => {
