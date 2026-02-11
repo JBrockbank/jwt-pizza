@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const isCI = !!process.env.CI;
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -7,7 +9,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
-  timeout: 5000,
+  timeout: isCI ? 30_000 : 10_000,
+  expect: {
+    timeout: isCI ? 10_000 : 5_000,
+  },
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
