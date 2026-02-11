@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: "22.x"
 
       - name: set version
         id: set_version
@@ -36,6 +36,15 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
+
+      - name: Debug webServer
+        run: |
+          echo "=== Testing manual server ==="
+          npm run build
+          npx vite preview --port 5174 --host 0.0.0.0 &
+          sleep 3
+          curl -f http://localhost:5174 || echo "❌ Server NOT ready"
+          curl -f http://localhost:5174 || echo "❌ Server STILL NOT ready"
 
       - name: Run tests
         run: |
