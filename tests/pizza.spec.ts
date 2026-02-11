@@ -1,5 +1,5 @@
-import { Page, expect } from '@playwright/test';
-import { test } from 'playwright-test-coverage';
+import { Page } from '@playwright/test';
+import { test, expect } from 'playwright-test-coverage';
 import { Role, User } from '../src/service/pizzaService';
 
 /* ------------------------ */

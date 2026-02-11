@@ -1,6 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -8,9 +7,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
-  timeout: 10000,
+  timeout: 5000,
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5174',
     trace: 'on-first-retry',
   },
 
@@ -25,7 +24,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
+    url: 'http://localhost:5174',
     reuseExistingServer: !process.env.CI,
     timeout: 5000,
   },
