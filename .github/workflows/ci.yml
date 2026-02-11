@@ -41,6 +41,7 @@ jobs:
         run: |
           echo "=== Testing manual server ==="
           npm run build
+          npx kill-port 5174 || true
           npx vite preview --port 5174 --host 0.0.0.0 &
           sleep 3
           curl -f http://localhost:5174 || echo "❌ Server NOT ready"
