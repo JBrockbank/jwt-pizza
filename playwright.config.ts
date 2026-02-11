@@ -22,10 +22,12 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run dev',
-  //   url: 'http://localhost:5174',
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 5000,
-  // },
+webServer: {
+  command: process.env.CI 
+    ? 'npx kill-port 5174 || true && npm run build && npx vite preview --port 5174 --host 0.0.0.0'
+    : 'npm run dev',
+  url: 'http://localhost:5174/',
+  timeout: 60 * 1000,
+  reuseExistingServer: true,  // Uses existing server if port occupied
+},
 });
