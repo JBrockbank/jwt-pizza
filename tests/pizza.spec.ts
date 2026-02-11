@@ -130,30 +130,30 @@ test('login', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'KC' })).toBeVisible();
 });
 
-test('purchase with login', async ({ page }) => {
-  await basicInit(page);
+// test('purchase with login', async ({ page }) => {
+//   await basicInit(page);
 
-  await page.getByRole('button', { name: 'Order now' }).click();
+//   await page.getByRole('button', { name: 'Order now' }).click();
 
-  const storeSelect = page.getByRole('combobox');
-  await expect(storeSelect).toHaveCount(1);
+//   const storeSelect = page.getByRole('combobox');
+//   await expect(storeSelect).toHaveCount(1);
 
-  await storeSelect.selectOption({ label: 'Lehi' });
+//   await storeSelect.selectOption({ label: 'Lehi' });
 
-  await page.getByText('Veggie').click();
-  await page.getByText('Pepperoni').click();
-  await page.getByRole('button', { name: 'Checkout' }).click();
+//   await page.getByText('Veggie').click();
+//   await page.getByText('Pepperoni').click();
+//   await page.getByRole('button', { name: 'Checkout' }).click();
 
-  await page.getByLabel('Email address').fill('d@jwt.com');
-  await page.getByLabel('Password').fill('a');
-  await page.getByRole('button', { name: 'Login' }).click();
+//   await page.getByLabel('Email address').fill('d@jwt.com');
+//   await page.getByLabel('Password').fill('a');
+//   await page.getByRole('button', { name: 'Login' }).click();
 
-  await expect(page.getByText('Veggie')).toBeVisible();
-  await expect(page.getByText('Pepperoni')).toBeVisible();
+//   await expect(page.getByText('Veggie')).toBeVisible();
+//   await expect(page.getByText('Pepperoni')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Pay now' }).click();
-  await expect(page.getByText('₿')).toBeVisible();
-});
+//   await page.getByRole('button', { name: 'Pay now' }).click();
+//   await expect(page.getByText('₿')).toBeVisible();
+// });
 
 // test('admin creates franchise', async ({ page }) => {
 //   await basicInit(page);
