@@ -423,7 +423,6 @@ await page.route('http://localhost:3000/api/franchise/42', async (route) => {
 });
 
 test('AdminDashboard basic rendering and navigation', async ({ page }) => {
-  // Initialize app with admin user
   await basicInit(page, {
     id: '1',
     name: 'Admin User',
@@ -432,7 +431,6 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     roles: [{ role: Role.Admin }],
   });
 
-  // Mock Users API
   await page.route(/\/api\/user(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
@@ -456,7 +454,6 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     });
   });
 
-  // Mock Franchises API
   await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
@@ -474,25 +471,19 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     });
   });
 
-  // Go directly to admin dashboard
   await page.goto('http://localhost:5173/admin-dashboard');
 
-  // Login via UI
   await page.getByRole('link', { name: 'Login' }).click();
   await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('admin');
   await page.getByRole('button', { name: 'Login' }).click();
 
-  // Confirm login succeeded and go to admin
   await expect(page.locator('#navbar-dark')).toContainText('Logout');
   await page.getByRole('link', { name: 'Admin' }).click();
 
-  //
-  // Users section assertions
-  //
+ 
   const usersSection = page.getByRole('heading', { name: 'Users' }).locator('xpath=following::table[1]');
 
-  // Users headers
   await expect(
     usersSection.getByRole('columnheader', { name: 'Name' })
   ).toBeVisible();
@@ -506,7 +497,6 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     usersSection.getByRole('columnheader', { name: 'Action' })
   ).toBeVisible();
 
-  // Users rows
   await expect(
     usersSection.getByRole('cell', { name: 'Admin User' })
   ).toBeVisible();
@@ -527,7 +517,6 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     usersSection.getByRole('cell', { name: 'diner', exact: true })
   ).toBeVisible();
 
-  // Users filter UI exists
   await expect(
     usersSection.getByPlaceholder('Filter users')
   ).toBeVisible();
@@ -535,7 +524,6 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     usersSection.getByRole('button', { name: 'Search' })
   ).toBeVisible();
 
-  // Users pagination buttons exist
   await expect(
     usersSection.getByRole('button', { name: '«' })
   ).toBeVisible();
@@ -543,9 +531,7 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     usersSection.getByRole('button', { name: '»' })
   ).toBeVisible();
 
-  //
-  // Franchises section assertions
-  //
+
   const franchisesSection = page
     .getByRole('heading', { name: 'Franchises' })
     .locator('xpath=following::table[1]');
@@ -578,10 +564,23 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
       .getByRole('button', { name: /Close/ })
   ).toBeVisible();
 
-  // Click "Add Franchise" button (global)
   await page.getByRole('button', { name: 'Add Franchise' }).click();
   await expect(page).toHaveURL(/create-franchise/);
 });
 
+test('About page renders core content', async ({ page }) => {
+  await page.goto('http://localhost:5173/about');
+
+  await expect(page.getByRole('heading', { name: 'The secret sauce' })).toBeVisible();
+
+  await expect(
+    page.getByText(/At JWT Pizza, our amazing employees are the secret behind our delicious pizzas/i)
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole('heading', { name: 'Our employees' })
+  ).toBeVisible();
+
+});
 
 
