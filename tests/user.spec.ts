@@ -220,3 +220,105 @@ test("update user email address", async ({ page }) => {
   await expect(page.getByRole("main")).toContainText(newEmail);
 });
 
+test('AdminDashboard user search functionality', async ({ page }) => {
+  // Initialize with admin user
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  // Mock users API to return multiple users initially
+  let userSearchQuery = '*'; // Track what filter is applied
+  await page.route(/\/api\/user(\?.*)?$/, async (route) => {
+    const url = route.request().url();
+    const params = new URLSearchParams(url.split('?')[1]);
+    userSearchQuery = params.get('name') || '*';
+
+    let users: { id: string; name: string; email: string; roles: { role: Role; }[]; }[];
+    if (userSearchQuery === '*' || userSearchQuery.includes('admin')) {
+      // All users or admin filter - return both
+      users = [
+        {
+          id: '1',
+          name: 'Admin User',
+          email: 'a@jwt.com',
+          roles: [{ role: Role.Admin }],
+        },
+        {
+          id: '2',
+          name: 'Diner Customer',
+          email: 'diner@example.com',
+          roles: [{ role: Role.Diner }],
+        },
+      ];
+    } else if (userSearchQuery.includes('diner')) {
+      // Diner filter - return only diner
+      users = [
+        {
+          id: '2',
+          name: 'Diner Customer',
+          email: 'diner@example.com',
+          roles: [{ role: Role.Diner }],
+        },
+      ];
+    } else {
+      // No matches
+      users = [];
+    }
+
+    await route.fulfill({
+      status: 200,
+      json: { users, more: false },
+    });
+  });
+
+  // Mock franchises (minimal - we don't test them here)
+  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: { franchises: [], more: false },
+    });
+  });
+
+  // Login as admin
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await expect(page.locator('#navbar-dark')).toContainText('Logout');
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  // Verify initial load shows both users
+  await expect(page.getByRole('cell', { name: 'Admin User' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Diner Customer' })).toBeVisible();
+
+  // Test user search - filter for "diner"
+  const usersSection = page.getByRole('heading', { name: 'Users' }).locator('xpath=following::table[1]');
+  await usersSection.getByPlaceholder('Filter users').fill('diner');
+  await usersSection.getByRole('button', { name: 'Search' }).click();
+
+  // Should now only show diner user
+  await expect(usersSection.getByRole('cell', { name: 'Diner Customer' })).toBeVisible();
+  await expect(usersSection.getByRole('cell', { name: 'Admin User' })).not.toBeVisible();
+  await expect(usersSection.getByRole('cell', { name: 'diner', exact: true })).toBeVisible();
+
+  // Test clear filter - search empty string
+  await usersSection.getByPlaceholder('Filter users').fill('');
+  await usersSection.getByRole('button', { name: 'Search' }).click();
+
+  // Should show all users again
+  await expect(usersSection.getByRole('cell', { name: 'Admin User' })).toBeVisible();
+  await expect(usersSection.getByRole('cell', { name: 'Diner Customer' })).toBeVisible();
+
+  // Test page reset on filter (should be on page 0)
+  await usersSection.getByPlaceholder('Filter users').fill('admin');
+  await usersSection.getByRole('button', { name: 'Search' }).click();
+  
+  // Previous button should be disabled (page 0)
+  await expect(usersSection.getByRole('button', { name: '«' })).toBeDisabled();
+});
