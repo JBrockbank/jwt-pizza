@@ -432,7 +432,31 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     roles: [{ role: Role.Admin }],
   });
 
-  // Mock API for fetching franchises (with query params)
+  // Mock Users API
+  await page.route(/\/api\/user(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: {
+        users: [
+          {
+            id: '1',
+            name: 'Admin User',
+            email: 'a@jwt.com',
+            roles: [{ role: Role.Admin }],
+          },
+          {
+            id: '2',
+            name: 'Diner User',
+            email: 'diner@example.com',
+            roles: [{ role: Role.Diner }],
+          },
+        ],
+        more: false,
+      },
+    });
+  });
+
+  // Mock Franchises API
   await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
@@ -442,9 +466,7 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
             id: 1,
             name: 'PizzaKing',
             admins: [{ id: '1', name: 'Admin User', email: 'a@jwt.com' }],
-            stores: [
-              { id: 101, name: 'SLC', totalRevenue: 5000 },
-            ],
+            stores: [{ id: 101, name: 'SLC', totalRevenue: 5000 }],
           },
         ],
         more: false,
@@ -452,35 +474,114 @@ test('AdminDashboard basic rendering and navigation', async ({ page }) => {
     });
   });
 
-  // Go to Admin Dashboard page
+  // Go directly to admin dashboard
   await page.goto('http://localhost:5173/admin-dashboard');
 
-  // Login via UI (using the mocked admin from basicInit)
+  // Login via UI
   await page.getByRole('link', { name: 'Login' }).click();
   await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('admin');
   await page.getByRole('button', { name: 'Login' }).click();
 
-  // Confirm login succeeded
+  // Confirm login succeeded and go to admin
   await expect(page.locator('#navbar-dark')).toContainText('Logout');
   await page.getByRole('link', { name: 'Admin' }).click();
 
-  // Assert table headers
-  await expect(page.getByRole('columnheader', { name: 'Franchise', exact: true })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'Franchisee' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'Store' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'Revenue' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'Action' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'PizzaKing' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Admin User' }).first()).toBeVisible();
-  await expect(page.getByRole('row', { name: 'PizzaKing Admin User' }).getByRole('button')).toBeVisible();
+  //
+  // Users section assertions
+  //
+  const usersSection = page.getByRole('heading', { name: 'Users' }).locator('xpath=following::table[1]');
 
+  // Users headers
+  await expect(
+    usersSection.getByRole('columnheader', { name: 'Name' })
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('columnheader', { name: 'Email' })
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('columnheader', { name: 'Roles' })
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('columnheader', { name: 'Action' })
+  ).toBeVisible();
 
-  // Click "Add Franchise" button
+  // Users rows
+  await expect(
+    usersSection.getByRole('cell', { name: 'Admin User' })
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('cell', { name: 'a@jwt.com' })
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('cell', { name: 'admin', exact: true })
+  ).toBeVisible();
+
+  await expect(
+    usersSection.getByRole('cell', { name: 'Diner User' })
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('cell', { name: 'diner@example.com' })
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('cell', { name: 'diner', exact: true })
+  ).toBeVisible();
+
+  // Users filter UI exists
+  await expect(
+    usersSection.getByPlaceholder('Filter users')
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('button', { name: 'Search' })
+  ).toBeVisible();
+
+  // Users pagination buttons exist
+  await expect(
+    usersSection.getByRole('button', { name: '«' })
+  ).toBeVisible();
+  await expect(
+    usersSection.getByRole('button', { name: '»' })
+  ).toBeVisible();
+
+  //
+  // Franchises section assertions
+  //
+  const franchisesSection = page
+    .getByRole('heading', { name: 'Franchises' })
+    .locator('xpath=following::table[1]');
+
+  await expect(
+    franchisesSection.getByRole('columnheader', { name: 'Franchise', exact: true })
+  ).toBeVisible();
+  await expect(
+    franchisesSection.getByRole('columnheader', { name: 'Franchisee' })
+  ).toBeVisible();
+  await expect(
+    franchisesSection.getByRole('columnheader', { name: 'Store' })
+  ).toBeVisible();
+  await expect(
+    franchisesSection.getByRole('columnheader', { name: 'Revenue' })
+  ).toBeVisible();
+  await expect(
+    franchisesSection.getByRole('columnheader', { name: 'Action' })
+  ).toBeVisible();
+
+  await expect(
+    franchisesSection.getByRole('cell', { name: 'PizzaKing' })
+  ).toBeVisible();
+  await expect(
+    franchisesSection.getByRole('cell', { name: 'Admin User' }).first()
+  ).toBeVisible();
+  await expect(
+    franchisesSection
+      .getByRole('row', { name: /PizzaKing .*Admin User/ })
+      .getByRole('button', { name: /Close/ })
+  ).toBeVisible();
+
+  // Click "Add Franchise" button (global)
   await page.getByRole('button', { name: 'Add Franchise' }).click();
-
-  // Since clicking navigates with React Router, check the URL contains 'create-franchise'
   await expect(page).toHaveURL(/create-franchise/);
 });
+
 
 
