@@ -322,3 +322,66 @@ test('AdminDashboard user search functionality', async ({ page }) => {
   // Previous button should be disabled (page 0)
   await expect(usersSection.getByRole('button', { name: '«' })).toBeDisabled();
 });
+
+test('AdminDashboard delete user confirmation', async ({ page }) => {
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  await page.route(/\/api\/user(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: {
+        users: [
+          {
+            id: '2',
+            name: 'Test Diner',
+            email: 'test-diner@example.com',
+            roles: [{ role: Role.Diner }],
+          },
+        ],
+        more: false,
+      },
+    });
+  });
+
+  await page.route(/\/api\/user\/2/, async (route) => {
+    expect(route.request().method()).toBe('DELETE');
+    await route.fulfill({ status: 200 });
+  });
+
+  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: { franchises: [], more: false },
+    });
+  });
+
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await expect(page.locator('#navbar-dark')).toContainText('Logout');
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  const usersSection = page.getByRole('heading', { name: 'Users' }).locator('xpath=following::table[1]');
+  const deleteButton = usersSection
+    .getByRole('button', { name: 'Delete' })
+
+  await expect(deleteButton).toBeVisible();
+  await expect(deleteButton).not.toBeDisabled();
+
+  await deleteButton.click();
+
+  page.on('dialog', async (dialog) => {
+    expect(dialog.message()).toContain('Are you sure you want to delete this user?');
+    await dialog.accept();
+  });
+
+});
