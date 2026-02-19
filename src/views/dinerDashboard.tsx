@@ -26,19 +26,21 @@ export default function DinerDashboard(props: Props) {
   }, [user]);
 
   async function updateUser() {
-  let updatedUser: User = {
-    id: user.id,
-    name: nameRef.current?.value,
-    email: emailRef.current?.value,
-    password: passwordRef.current?.value || undefined,
-    roles: user.roles,
-  };
+    let updatedUser: User = {
+      id: user.id,
+      name: nameRef.current?.value,
+      email: emailRef.current?.value,
+      password: passwordRef.current?.value || undefined,
+      roles: user.roles,
+    };
 
-  props.setUser(updatedUser);
-  setTimeout(() => {
-    HSOverlay.close(document.getElementById('hs-jwt-modal')!);
-  }, 100);
-}
+    await pizzaService.updateUser(updatedUser);
+
+    props.setUser(updatedUser);
+    setTimeout(() => {
+      HSOverlay.close(document.getElementById("hs-jwt-modal")!);
+    }, 100);
+  }
 
   const nameRef = React.useRef<HTMLInputElement>(null);
   const emailRef = React.useRef<HTMLInputElement>(null);
