@@ -53,6 +53,12 @@ class HttpPizzaService implements PizzaService {
     return Promise.resolve(user);
   }
 
+  async updateUser(updatedUser: User): Promise<User> {
+  const { user, token } = await this.callEndpoint(`/api/user/${updatedUser.id}`, 'PUT', updatedUser);
+  localStorage.setItem('token', token);
+  return Promise.resolve(user);
+}
+
   logout(): void {
     this.callEndpoint('/api/auth', 'DELETE');
     localStorage.removeItem('token');
@@ -69,6 +75,15 @@ class HttpPizzaService implements PizzaService {
     }
     return Promise.resolve(result);
   }
+
+  async getUsers(page: number = 0, limit: number = 10, nameFilter: string = '*'): Promise<{ users: User[], more: boolean }> {
+  return this.callEndpoint(`/api/user?page=${page}&limit=${limit}&name=${nameFilter}`);
+}
+
+async deleteUser(userId: string): Promise<void> {
+  return this.callEndpoint(`/api/user/${userId}`, 'DELETE');
+}
+
 
   async getMenu(): Promise<Menu> {
     return this.callEndpoint('/api/order/menu');
@@ -115,12 +130,6 @@ class HttpPizzaService implements PizzaService {
       return this.callEndpoint(pizzaFactoryUrl + `/api/docs`);
     }
     return this.callEndpoint(`/api/docs`);
-  }
-
-  async updateUser(updatedUser: User): Promise<User> {
-    const { user, token } = await this.callEndpoint(`/api/user/${updatedUser.id}`, 'PUT', updatedUser);
-    localStorage.setItem('token', token);
-    return Promise.resolve(user);
   }
 }
 
