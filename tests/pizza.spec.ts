@@ -584,3 +584,103 @@ test('About page renders core content', async ({ page }) => {
 });
 
 
+test('CreateFranchise renders correctly', async ({ page }) => {
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  await page.goto('http://localhost:5173/create-franchise');
+
+  await expect(page.getByRole('heading', { name: 'Create franchise' })).toBeVisible();
+  await expect(page.getByPlaceholder('franchise name')).toBeVisible();
+  await expect(page.getByPlaceholder('franchisee admin email')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+});
+
+
+test('CreateFranchise submits and navigates back', async ({ page }) => {
+  let createdFranchise: any = null;
+
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  // Mock create franchise API
+  await page.route('*/**/api/franchise', async (route) => {
+    if (route.request().method() === 'POST') {
+      createdFranchise = route.request().postDataJSON();
+      await route.fulfill({
+        status: 201,
+        json: { id: 123, ...createdFranchise },
+      });
+    } else {
+      await route.continue();
+    }
+  });
+
+  await page.goto('http://localhost:5173/create-franchise');
+
+  await page.getByPlaceholder('franchise name').fill('New Franchise');
+  await page.getByPlaceholder('franchisee admin email').fill('f@jwt.com');
+
+  await page.getByRole('button', { name: 'Create' }).click();
+
+  // Ensure API received correct data
+  expect(createdFranchise.name).toBe('New Franchise');
+  expect(createdFranchise.admins[0].email).toBe('f@jwt.com');
+
+  // Verify navigation occurred (breadcrumb should take us back)
+  await expect(page).not.toHaveURL(/create-franchise/);
+});
+
+
+test('CreateFranchise cancel navigates back without API call', async ({ page }) => {
+  let apiCalled = false;
+
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  await page.route('*/**/api/franchise', async (route) => {
+    apiCalled = true;
+    await route.continue();
+  });
+
+  await page.goto('http://localhost:5173/create-franchise');
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+
+  expect(apiCalled).toBe(false);
+  await expect(page).not.toHaveURL(/create-franchise/);
+});
+
+
+test('CreateFranchise requires inputs before submission', async ({ page }) => {
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  await page.goto('http://localhost:5173/create-franchise');
+
+  await page.getByRole('button', { name: 'Create' }).click();
+
+  // Should still be on same page due to required fields
+  await expect(page).toHaveURL(/create-franchise/);
+});
