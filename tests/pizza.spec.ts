@@ -184,7 +184,7 @@ test('purchase with login', async ({ page }) => {
 
 
 test('register', async ({ page }) => {
-  await page.route('http://localhost:3000/api/auth', async (route) => {
+  await page.route('**/api/auth', async (route) => {
     if (route.request().method() === 'POST') {
       const postData = route.request().postDataJSON();
       await route.fulfill({
@@ -199,14 +199,14 @@ test('register', async ({ page }) => {
     }
   });
 
-  await page.route('http://localhost:3000/api/order', async (route) => {
+  await page.route('**/api/order', async (route) => {
     await route.fulfill({
       status: 200,
       json: { id: '1', dinerId: '5', orders: [] },
     });
   });
 
-  await page.route('http://localhost:3000/api/order/menu', async (route) => {
+  await page.route('**/api/order/menu', async (route) => {
     const menuRes = [
       { id: 1, title: 'Veggie', image: 'pizza1.png', price: 0.0038, description: 'A garden of delight' },
       { id: 2, title: 'Pepperoni', image: 'pizza2.png', price: 0.0042, description: 'Spicy treat' },
@@ -214,7 +214,7 @@ test('register', async ({ page }) => {
     await route.fulfill({ status: 200, json: menuRes });
   });
 
-  await page.route('http://localhost:3000/api/franchise?page=0&limit=20&name=*', async (route) => {
+  await page.route('**/api/franchise?page=0&limit=20&name=*', async (route) => {
     await route.fulfill({
       status: 200,
       json: {
@@ -312,7 +312,7 @@ test('create and delete store', async ({ page }) => {
   });
 
   // Mock GET franchise by user ID (franchise 42)
-await page.route('http://localhost:3000/api/franchise/42', async (route) => {
+await page.route('**/api/franchise/42', async (route) => {
   await route.fulfill({
     status: 200,
     json: [
@@ -377,7 +377,7 @@ await page.route('http://localhost:3000/api/franchise/42', async (route) => {
     }
   });
 
-  await page.route('http://localhost:3000/api/franchise/1/store', async (route) => {
+  await page.route('**/api/franchise/1/store', async (route) => {
   const postData = route.request().postDataJSON();
   // Return a mock store with a generated ID and the posted name
   await route.fulfill({

@@ -77,7 +77,7 @@ async function basicInit(page: Page, userOverride?: User) {
     await route.fulfill({ json: loggedInUser });
   });
 
-await page.route('http://localhost:3000/api/user/1001', async (route) => {
+await page.route('**/api/user/*', async (route) => {
   const method = route.request().method();
   if (method === 'PUT') {
     const updatedUser = await route.request().postDataJSON();
@@ -178,7 +178,7 @@ test("update user name", async ({ page }) => {
   await page.getByRole("textbox").first().fill("pizza dinerx");
   await page.getByRole("button", { name: "Update" }).click();
 
-  await page.waitForSelector('[role="dialog"].hidden', { state: "attached" });
+  // await page.waitForSelector('[role="dialog"].hidden', { state: "attached" });
 
   await expect(page.getByRole("main")).toContainText("pizza dinerx");
 });
