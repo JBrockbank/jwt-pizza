@@ -385,3 +385,228 @@ test('AdminDashboard delete user confirmation', async ({ page }) => {
   });
 
 });
+
+
+test('AdminDashboard blocks non-admin users', async ({ page }) => {
+  await basicInit(page, {
+    id: '3',
+    name: 'Regular Diner',
+    email: 'd@jwt.com',
+    password: 'a',
+    roles: [{ role: Role.Diner }],
+  });
+
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.goto('http://localhost:5173/admin-dashboard');
+
+  // ✅ Assert NotFound content
+  await expect(page.getByRole('heading', { name: 'Oops' })).toBeVisible();
+  await expect(
+    page.getByText(
+      'It looks like we have dropped a pizza on the floor. Please try another page.'
+    )
+  ).toBeVisible();
+});
+
+
+test('Admin cannot delete themselves', async ({ page }) => {
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  await page.route(/\/api\/user(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: {
+        users: [
+          {
+            id: '1',
+            name: 'Admin User',
+            email: 'a@jwt.com',
+            roles: [{ role: Role.Admin }],
+          },
+        ],
+        more: false,
+      },
+    });
+  });
+
+  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: { franchises: [], more: false },
+    });
+  });
+
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  const deleteButton = page.getByRole('button', { name: 'Delete' });
+
+  await expect(deleteButton).toBeDisabled();
+});
+
+
+test('AdminDashboard franchise filter works', async ({ page }) => {
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  await page.route(/\/api\/user(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: { users: [], more: false },
+    });
+  });
+
+  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+    const url = route.request().url();
+    const params = new URLSearchParams(url.split('?')[1]);
+    const filter = params.get('name') || '*';
+
+    let franchises = [];
+
+    if (filter.includes('PizzaCorp')) {
+      franchises = [
+        {
+          id: 3,
+          name: 'PizzaCorp',
+          admins: [{ name: 'Owner A' }],
+          stores: [],
+        },
+      ];
+    } else {
+      franchises = [
+        {
+          id: 2,
+          name: 'LotaPizza',
+          admins: [{ name: 'Owner B' }],
+          stores: [],
+        },
+      ];
+    }
+
+    await route.fulfill({
+      status: 200,
+      json: { franchises, more: false },
+    });
+  });
+
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  const franchiseSection = page.getByRole('heading', { name: 'Franchises' })
+    .locator('xpath=following::table[1]');
+
+  await franchiseSection.getByPlaceholder('Filter franchises').fill('PizzaCorp');
+  await franchiseSection.getByRole('button', { name: 'Search' }).click();
+
+  await expect(franchiseSection.getByText('PizzaCorp')).toBeVisible();
+});
+
+
+test('AdminDashboard franchise pagination next button', async ({ page }) => {
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  let pageIndex = 0;
+
+  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+    pageIndex++;
+    await route.fulfill({
+      status: 200,
+      json: {
+        franchises: [
+          {
+            id: pageIndex,
+            name: `Franchise ${pageIndex}`,
+            admins: [{ name: 'Owner' }],
+            stores: [],
+          },
+        ],
+        more: pageIndex === 1, // only first page has more
+      },
+    });
+  });
+
+  await page.route(/\/api\/user(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      json: { users: [], more: false },
+    });
+  });
+
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  const nextButton = page.getByRole('button', { name: '»' }).last();
+
+  await expect(nextButton).toBeEnabled();
+  await nextButton.click();
+
+  await expect(page.getByText('Franchise 2')).toBeVisible();
+});
+
+
+test('AdminDashboard Add Franchise button navigates', async ({ page }) => {
+  await basicInit(page, {
+    id: '1',
+    name: 'Admin User',
+    email: 'a@jwt.com',
+    password: 'admin',
+    roles: [{ role: Role.Admin }],
+  });
+
+  await page.route(/\/api\/user(\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, json: { users: [], more: false } });
+  });
+
+  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+    await route.fulfill({ status: 200, json: { franchises: [], more: false } });
+  });
+
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('admin');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  await page.getByRole('button', { name: 'Add Franchise' }).click();
+
+  await expect(page).toHaveURL(/create-franchise/);
+});
