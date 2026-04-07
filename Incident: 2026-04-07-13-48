@@ -1,0 +1,40 @@
+Summary:
+Between the hour of 13:40-13:50 on 04-07-2026, users encountered pizza order failure. The event was triggered by a chaos test at 13:40. This caused all pizza orders to fail at the factory level. The event was detected by me while watching the grafana dashboard. I started working on the event by opening dev tools and viewing the failed request. This Medium level incident affected 100% of users using it at the time.
+
+Detection:
+This incident was detected by me as I was watching the dashboard. I noticed that there was a sudden uptick in pizza order failures.
+
+
+Impact:
+For 0hrs 10mins, between 13:40 and 13:50 on 04-07-2026, users were unable to order pizzas. This incident affected around 10 order requests before it was fixed.
+
+
+Timeline:
+13:40 - Chaos initiated
+13:45 - I noticed a spike in pizza order failures
+13:46 - I started invesitgating the reason behind the failures
+13:47 - I was able to replicate the issue
+13:48 - In the network request, I found a link to stop the chaos
+13:49 - Chaos stopped. All returned to normal
+
+
+Response:
+After detecting the incident, I was immediately able to respond to the issue and start diagnosing.
+
+
+Root Cause:
+Chaos from the JWT Pizza Factory
+
+
+Resolution:
+It was resolved through using the link to deactivate the chaos. This could have been resolved faster if there was slightly faster detection. Luckily, I happened to pull up the grafana dashboard and noticed the pizza order failures spiking. However, had I not happened to pull it up, it would have taken a while. The threshold I was using for an alert was too high for the only small amount of traffic I was simulating.
+
+
+Prevention:
+In this case, not applicable really
+
+
+Action Items:
+1. Get average values for failures for all the different metrics. 
+2. Re base all alert thresholds to be lower to be more useful.
+
